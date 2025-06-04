@@ -99,9 +99,12 @@ class OrbitingBall {
       let dropR = orbitRadius - ballRadius * 2;
       let dropX = width / 2 + dropR * cos(angle);
       let dropY = height / 2 + dropR * sin(angle);
-      moleculeBalls.push(new MoleculeBall(dropX, dropY, false));
-      checkHourTransition();
-    }
+    
+      if (!isTooClose(dropX, dropY, ballRadius, 10)) {
+        moleculeBalls.push(new MoleculeBall(dropX, dropY, false));
+        checkHourTransition();
+      }
+    }      
   }
 }
 
@@ -136,26 +139,54 @@ class HourAtom {
   }
 }
 
+function checkHourTransition() {
+  if (moleculeBalls.length >= 60) {
+    let center = getMoleculeCenter(moleculeBalls);
+
+    if (!isTooClose(center.x, center.y, 16, 10)) {
+      hourAtoms.push(new HourAtom(center.x, center.y));
+    }
+
+    moleculeBalls = [];
+  }
+}
+
 function handleMolecularConnections() {
   stroke('#FF5C57');
   strokeWeight(1);
 
+  // Reset
   for (let ball of moleculeBalls) {
     ball.connections = 0;
   }
 
-  for (let i = 0; i < moleculeBalls.length; i++) {
-    for (let j = i + 1; j < moleculeBalls.length; j++) {
-      let a = moleculeBalls[i];
-      let b = moleculeBalls[j];
-      if (a.connections >= 3 || b.connections >= 3) continue;
+  // Schritt 1: Sortiere Bälle kreisförmig (z. B. nach Winkel vom Mittelpunkt)
+  let center = getMoleculeCenter(moleculeBalls);
+  let sorted = moleculeBalls.slice().sort((a, b) => {
+    let angleA = atan2(a.y - center.y, a.x - center.x);
+    let angleB = atan2(b.y - center.y, b.x - center.x);
+    return angleA - angleB;
+  });
 
-      let d = dist(a.x, a.y, b.x, b.y);
-      if (d < 80) {
-        line(a.x, a.y, b.x, b.y);
-        a.connections++;
-        b.connections++;
-      }
+  // Schritt 2: Verbinde sie ringförmig
+  for (let i = 0; i < sorted.length; i++) {
+    let a = sorted[i];
+    let b = sorted[(i + 1) % sorted.length]; // Ring schließen
+    if (a.connections < 3 && b.connections < 3) {
+      line(a.x, a.y, b.x, b.y);
+      a.connections++;
+      b.connections++;
+    }
+  }
+
+  // Optional: weitere Verbindungen, um Verzweigungen hinzuzufügen (z. B. Nachbarn 2 Schritte entfernt)
+  for (let i = 0; i < sorted.length; i++) {
+    let a = sorted[i];
+    let b = sorted[(i + 2) % sorted.length];
+    if (a.connections < 3 && b.connections < 3) {
+      line(a.x, a.y, b.x, b.y);
+      a.connections++;
+      b.connections++;
     }
   }
 }
@@ -164,21 +195,53 @@ function handleHourConnections() {
   stroke('#00C0FF');
   strokeWeight(1.5);
 
+  // Reset connections
   for (let atom of hourAtoms) {
     atom.connections = 0;
   }
+
+  // Verbindungslogik: sicherstellen, dass jede Kugel mindestens eine Verbindung hat
+  let connected = new Set();
 
   for (let i = 0; i < hourAtoms.length; i++) {
     for (let j = i + 1; j < hourAtoms.length; j++) {
       let a = hourAtoms[i];
       let b = hourAtoms[j];
+
       if (a.connections >= 2 || b.connections >= 2) continue;
 
       let d = dist(a.x, a.y, b.x, b.y);
-      if (d < 100) {
+      if (d < 200) {  // großzügigerer Abstand für visuelle Klarheit
         line(a.x, a.y, b.x, b.y);
         a.connections++;
         b.connections++;
+        connected.add(i);
+        connected.add(j);
+      }
+    }
+  }
+
+  // Nachprüfung: einsame Kugeln
+  for (let i = 0; i < hourAtoms.length; i++) {
+    if (!connected.has(i) && hourAtoms.length > 1) {
+      let a = hourAtoms[i];
+      let minDist = Infinity;
+      let closest = null;
+
+      for (let j = 0; j < hourAtoms.length; j++) {
+        if (i === j) continue;
+        let b = hourAtoms[j];
+        let d = dist(a.x, a.y, b.x, b.y);
+        if (b.connections < 2 && d < minDist) {
+          minDist = d;
+          closest = b;
+        }
+      }
+
+      if (closest) {
+        line(a.x, a.y, closest.x, closest.y);
+        a.connections++;
+        closest.connections++;
       }
     }
   }
@@ -219,7 +282,23 @@ function checkMoleculeBoundary() {
 function checkHourTransition() {
   if (moleculeBalls.length >= 60) {
     let center = getMoleculeCenter(moleculeBalls);
-    hourAtoms.push(new HourAtom(center.x, center.y));
+    
+    if (!isOverlapping(center.x, center.y, 16)) {
+      hourAtoms.push(new HourAtom(center.x, center.y));
+    }
+
     moleculeBalls = [];
   }
+}
+
+function isTooClose(x, y, radius, minDistance = 100) {
+  for (let ball of moleculeBalls) {
+    let d = dist(x, y, ball.x, ball.y);
+    if (d < radius + ball.radius + minDistance) return true;
+  }
+  for (let atom of hourAtoms) {
+    let d = dist(x, y, atom.x, atom.y);
+    if (d < radius + atom.radius + minDistance) return true;
+  }
+  return false;
 }
