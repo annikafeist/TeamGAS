@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Molecular Watchface 09:35</title>
+  <style>
+    body { margin: 0; background: black; }
+    canvas { display: block; margin: auto; background: black; }
+  </style>
+</head>
+<body>
+<canvas id="watchCanvas" width="960" height="960"></canvas>
+
+<script>
+const canvas = document.getElementById("watchCanvas");
+const ctx = canvas.getContext("2d");
+
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+// Time: 09:35
+const hour = 9;
+const minute = 35;
+
+const molecules = Math.floor(minute / 5); // 7
+const atomsPerMolecule = 5;
+const moleculeRadius = 300;
+const moleculeSize = 30;
+const rotationSpeed = (2 * Math.PI) / 500;
+
+function drawAtom(x, y, radius, color) {
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, 2 * Math.PI);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function drawArm(x1, y1, angle, length, color) {
+  const x2 = x1 + length * Math.cos(angle);
+  const y2 = y1 + length * Math.sin(angle);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawMolecule(cx, cy, rotation, arms) {
+  for (let i = 0; i < atomsPerMolecule; i++) {
+    const angle = rotation + i * (2 * Math.PI / atomsPerMolecule);
+    const x = cx + moleculeSize * Math.cos(angle);
+    const y = cy + moleculeSize * Math.sin(angle);
+    drawAtom(x, y, 6, 'white');
+  }
+
+  // Binding arms
+  for (let i = 0; i < arms; i++) {
+    const angle = rotation + i * (2 * Math.PI / arms);
+    drawArm(cx, cy, angle, moleculeSize * 1.5, '#FF5C57');
+  }
+}
+
+let frame = 0;
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw central atom
+  drawAtom(centerX, centerY, 50, 'white');
+
+  for (let i = 0; i < molecules; i++) {
+    const baseAngle = (2 * Math.PI * i / molecules) + frame * rotationSpeed;
+    const cx = centerX + moleculeRadius * Math.cos(baseAngle);
+    const cy = centerY + moleculeRadius * Math.sin(baseAngle);
+    drawMolecule(cx, cy, baseAngle + frame * 0.1, hour);
+  }
+
+  frame++;
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
