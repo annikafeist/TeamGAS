@@ -9,9 +9,12 @@ let lastBallTime = 0;
 
 let moleculeVelocity = { x: 0.7, y: -0.4 };
 
+  // apply rotation of device to gravity
+  // engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
+  // engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
+
 function setup() {
   const canvas = createCanvas(960, 960);
-  canvas.parent('thecanvas');
   angleMode(RADIANS);
   noStroke();
 
@@ -41,8 +44,11 @@ function draw() {
 
   // bewege gesamtes Molekül
   for (let ball of moleculeBalls) {
-    ball.x += moleculeVelocity.x;
-    ball.y += moleculeVelocity.y;
+    // ball.x += moleculeVelocity.x;
+    // ball.y += moleculeVelocity.y;
+  // apply rotation of device to gravity
+  ball.x += (rotationY / 2 - ball.x) * 0.5;
+  ball.y += (rotationX / 2 - ball.y) * 0.5;
   }
 
   // überprüfe Randkollision für das ganze Molekül
