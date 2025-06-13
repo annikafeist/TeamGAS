@@ -1,6 +1,15 @@
 let ball;
 let slides = [];
 let erster = true;
+let hitSound;
+
+//Sound in Script einfügen
+function preload() {
+  hitSound = loadSound('./Slap-SoundMaster13-49669815.mp3');
+  console.log('TestSound')
+  hitSound.playMode('sustain');
+}
+
 
 //erzeugt zeichenfläche
 function setup() {
@@ -35,9 +44,18 @@ function setup() {
     const x = baseX + i * stepX;
     const y = baseY + i * stepY;
 
-    slides.push(
-      new Block(world, { x: x, y: y, w: stairWidth, h: stairHeight, color: 'grey' }, { isStatic: true, angle: 0.1 })
-    );
+    const slide = Matter.Bodies.rectangle(x, y, stairWidth, stairHeight, {
+      isStatic: true,
+      angle: 0.1,
+      label: "slide",
+      render: {
+        fillStyle: 'purple'
+      }
+    });
+
+    slide.highlight = false; // Custom property
+    slides.push(slide);
+    Matter.World.add(world, slide);
   }
 
   // // Zweite Treppe (nach links)
@@ -55,11 +73,33 @@ function setup() {
   // }
 
   // Ball wird erzeugt
-  ball = new Ball(world, { x: 100, y: 50, r: 40, color: 'white' }, { restitution: 0.7 });
+  ball = new Ball(world, { x: 100, y: 50, r: 40, color: 'white' }, { restitution: 0.7, label: "ball" });
 
   //ball speed 
   Matter.Body.setVelocity(ball.body, { x: 5, y: 0 });
 
+//Kollision mit Stufe
+  Matter.Events.on(engine, 'collisionStart', function(event) {
+  event.pairs.forEach(function(pair) {
+    const bodyA = pair.bodyA;
+    const bodyB = pair.bodyB;
+    console.log('Collision:', bodyA.label, bodyB.label);
+
+    //SOund bei Kollision
+    const labels = [bodyA.label, bodyB.label];
+    if (labels.includes("ball") && labels.includes("slide")) {
+      console.log('Playing sound!');
+      hitSound.play();
+    }
+    // Aufleuchten
+    const slide = bodyA.label === "slide" ? bodyA : bodyB;
+    slide.highlight = true;
+    setTimeout(() => {
+      slide.highlight = false;
+    }, 200);
+  });
+});
+  
   // Startet physik simulation
   Matter.Runner.run(engine);
 }
@@ -82,8 +122,16 @@ function draw() {
 
   //Zeichnet plattform und ball
   for (let s of slides) {
-    s.draw();
+    push();
+    translate(s.position.x, s.position.y);
+    rotate(s.angle);
+    rectMode(CENTER);
+    noStroke();
+    fill(s.highlight ? 'yellow' : 'grey');
+    rect(0, 0, 270, 20); // Nutze die Werte, die du beim Erstellen benutzt hast
+    pop();
   }
+  
   ball.draw();
   pop()
   //stellt zeichen einstellungen (kamera, Zoom) zurück
