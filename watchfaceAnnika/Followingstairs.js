@@ -6,6 +6,15 @@ let lampBody;
 let rope;
 let ballColor = 'white';
 
+// erstellt  Treppen 
+const stairCount = 20;
+const stairWidth = 272;
+const stairHeight = 2000;
+const stepX = 270; // horizontaler Abstand
+const stepY = 150; // vertikaler Abstand
+const baseX = 200;
+const baseY = 1200;
+
 //Sound in Script einfügen
 function preload() {
   hitSound = loadSound('./Slap-SoundMaster13-49669815.mp3');
@@ -21,26 +30,14 @@ function setup() {
   let engine = Matter.Engine.create();
   let world = engine.world;
 
-  // erstellt  Treppen 
-  const stairCount = 1000;
-  const stairWidth = 270;
-  const stairHeight = 200;
-  const stepX = 270; // horizontaler Abstand
-  const stepY = 150; // vertikaler Abstand
-  const baseX = 200;
-  const baseY = 300;
-
   for (let i = 0; i < stairCount; i++) {
     const x = baseX + i * stepX;
     const y = baseY + i * stepY;
 
     const slide = Matter.Bodies.rectangle(x, y, stairWidth, stairHeight, {
       isStatic: true,
-      angle: 0.1,
-      label: "slide",
-      render: {
-        fillStyle: 'purple'
-      }
+      // angle: 0.0,
+      label: "slide"
     });
 
     slide.highlight = false; // Custom property
@@ -48,56 +45,87 @@ function setup() {
     Matter.World.add(world, slide);
   }
 
- // LAMPE AB STUFE 30 (Index 29)
-const lampAnchorX = slides[9].position.x;
-const lampAnchorY = slides[9].position.y - 1900; // Hängt 800px über Treppe
+   // 10 geneigte Plattformen
+  const platformCount = 10;
+  const platformWidth = 300;
+  const platformHeight = 20;
+  const platformBaseXLeft = 5650;
+  const platformBaseXRight = 6100;
+  const platformStartY = 3400;
+  const horizontalShift = 10; // pro Reihe nach rechts verschieben
 
-// Großer Lampenkörper (Kreis für Glühbirne als physikalisches Objekt)
-lampBody = Matter.Bodies.circle(lampAnchorX, lampAnchorY + 500, 100, {
-  // restitution: 0.2,
-  // density: 0.002,
-  label: "lamp"
-});
-Matter.World.add(world, lampBody);
+  for (let i = 0; i < platformCount; i++) {
+    let isLeft = i % 2 === 0;
+    // x-Versatz anwenden
+    let x = isLeft 
+      ? platformBaseXLeft + i * horizontalShift 
+      : platformBaseXRight + i * horizontalShift;    
+    
+    let y = platformStartY + i * 180; // Abstand in y-Richtung (Höhe)
+    let angle = isLeft ? 0.7 : -0.7; //  Neigungswinkel für Flipper-Feeling
 
-// Seil (Constraint von Decke zur Lampe)
-rope = Matter.Constraint.create({
-  pointA: { x: lampAnchorX, y: lampAnchorY },     // Deckenpunkt
-  bodyB: lampBody,
-  pointB: { x: 0, y: -60 },                        // oben an Lampe
-  length: 800,
-  stiffness: 0.9
-});
-Matter.World.add(world, rope);
+    let platform = Matter.Bodies.rectangle(x, y, platformWidth, platformHeight, {
+      isStatic: true,
+      angle: angle,
+      label: "platform"
+    });
+    
+    platform.neutral = true; // <--- Merkmal setzen
+    platform.highlight = false;
+    slides.push(platform);
+    Matter.World.add(world, platform);
+  }
+
+  // LAMPE AB STUFE 10 (Index 9)
+  const lampAnchorX = slides[9].position.x;
+  const lampAnchorY = slides[9].position.y - 2800; // Hängt 2800px über Treppe
+
+  // Großer Lampenkörper (Kreis für Glühbirne als physikalisches Objekt)
+  lampBody = Matter.Bodies.circle(lampAnchorX, lampAnchorY + 500, 100, {
+    // restitution: 0.2,
+    // density: 0.002,
+    label: "lamp"
+  });
+  Matter.World.add(world, lampBody);
+
+  // Seil (Constraint von Decke zur Lampe)
+  rope = Matter.Constraint.create({
+    pointA: { x: lampAnchorX, y: lampAnchorY },     // Deckenpunkt
+    bodyB: lampBody,
+    pointB: { x: 0, y: -60 },                        // oben an Lampe
+    length: 800,
+    stiffness: 0.9
+  });
+  Matter.World.add(world, rope);
 
   // Ball wird erzeugt
-  ball = new Ball(world, { x: 100, y: 50, r: 40, color: 'white' }, { restitution: 0.7, label: "ball" });
+  ball = new Ball(world, { x: 100, y: 50, r: 40, color: 'white' }, { restitution: 0.8, label: "ball" });
 
   //ball speed 
-  Matter.Body.setVelocity(ball.body, { x: 6, y: 0 });
+  Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
 
-//Kollision mit Stufe
-  Matter.Events.on(engine, 'collisionStart', function(event) {
-  event.pairs.forEach(function(pair) {
-    const bodyA = pair.bodyA;
-    const bodyB = pair.bodyB;
-    console.log('Collision:', bodyA.label, bodyB.label);
+  //Kollision mit Stufe
+  Matter.Events.on(engine, 'collisionStart', function (event) {
+    event.pairs.forEach(function (pair) {
+      const bodyA = pair.bodyA;
+      const bodyB = pair.bodyB;
+      console.log('Collision:', bodyA.label, bodyB.label);
 
-    //Sound bei Kollision
-    const labels = [bodyA.label, bodyB.label];
-    if (labels.includes("ball") && labels.includes("slide")) {
-      console.log('Playing sound!');
-      hitSound.play();
-    }
-    // Aufleuchten
-    const slide = bodyA.label === "slide" ? bodyA : bodyB;
-    slide.highlight = true;
-    setTimeout(() => {
-      slide.highlight = false;
-    }, 200);
+      //Sound bei Kollision
+      const labels = [bodyA.label, bodyB.label];
+      if (labels.includes("ball") && labels.includes("slide")) {
+        console.log('Playing sound!');
+        hitSound.play();
+      }
+      // Aufleuchten
+      const slide = bodyA.label === "slide" ? bodyA : bodyB;
+      slide.highlight = true;
+      setTimeout(() => {
+        slide.highlight = false;
+      }, 200);
+    });
   });
-});
-  
+
   // Startet physik simulation
   Matter.Runner.run(engine);
 }
@@ -118,81 +146,59 @@ function draw() {
   //hintergrund schwarz
   background(0);
 
-// Fester weißer Lichtstrahl unter der Lampe (ohne Transparenz)
-let lightBeamWidth = 811;
-let lightBeamHeight = 5000;
-let lightX = lampBody.position.x;
-let lightY = lampBody.position.y;
+  // Fester weißer Lichtstrahl unter der Lampe (ohne Transparenz)
+  let lightBeamWidth = 811;
+  let lightBeamHeight = 5000;
+  let lightX = lampBody.position.x;
+  let lightY = lampBody.position.y;
 
-// --- Ballfarbe ändern, wenn im Lichtstrahl ---
-let beamLeft = lightX - lightBeamWidth / 2;
-let beamRight = lightX + lightBeamWidth / 2;
-let beamTop = lightY;
-let beamBottom = lightY + lightBeamHeight;
+  // --- Ballfarbe ändern, wenn im Lichtstrahl ---
+  let beamLeft = lightX - lightBeamWidth / 2;
+  let beamRight = lightX + lightBeamWidth / 2;
+  let beamTop = lightY;
+  let beamBottom = lightY + lightBeamHeight;
 
-let bx = ball.body.position.x;
-let by = ball.body.position.y;
+  let bx = ball.body.position.x;
+  let by = ball.body.position.y;
 
-if (bx >= beamLeft && bx <= beamRight && by >= beamTop && by <= beamBottom) {
-  ballColor = 'black';
-} else {
-  ballColor = 'white';
-}
+  if (bx >= beamLeft && bx <= beamRight && by >= beamTop && by <= beamBottom) {
+    ballColor = 'black';
+  } else {
+    ballColor = 'white';
+  }
 
-noStroke();
-fill(255); // rein weiß
-rectMode(CENTER);
-rect(lightX, lightY + lightBeamHeight / 2, lightBeamWidth, lightBeamHeight);
-
-// --- Schwarze Stufen im Lichtkegel (invertierter Effekt) ---
-for (let i = 3; i <= 5; i++) {
-  let s = slides[i];
-  push();
-  translate(s.position.x, s.position.y);
+  noStroke();
+  fill('255'); // rein weiß
   rectMode(CENTER);
-  noStroke();
-  fill(0); // Schwarz
-  rect(0, -90, 270, 20); // Gleiche Maße wie weiße Stufen
-  pop();
-}
+  rect(lightX, lightY + lightBeamHeight / 2, lightBeamWidth, lightBeamHeight);
 
-  // zeichne visuelle zusammenhängende Treppe
+  // zeichne visuelle zusammenhÃ¤ngende Treppe
   noStroke();
-  fill(255); // Weiß
-  beginShape();
   let stairsToDraw = slides.slice(0, 1000); // Nur die erste Treppe
   stairsToDraw.forEach((s, i) => {
-    // obere linke Ecke jeder Stufe
-    vertex(s.position.x - 135, s.position.y - 100); 
-    // obere rechte Ecke jeder Stufe
-    vertex(s.position.x + 135, s.position.y - 100);
-  });
-  // Rückweg unten entlang
-  for (let i = stairsToDraw.length - 1; i >= 0; i--) {
-    let s = stairsToDraw[i];
-    // untere rechte Ecke jeder Stufe
-    vertex(s.position.x + 135, s.position.y + 2000);
-    // untere linke Ecke jeder Stufe
-    vertex(s.position.x - 135, s.position.y + 2000);
-  }
-  endShape(CLOSE);
+    fill(i > 7 && i < 11 ? 'black' : 'white'); // Weiß
+    push();
+    drawVertices(s.vertices)
+    translate(s.position.x, s.position.y - stairHeight / 2 + 100);
+    rectMode(CENTER);
+    if (s.highlight) {
+
+      noStroke();
+      fill('red');
+      // fill(s.highlight ? 'red' : 'black');
+      rect(0, -90, 272, 20); // Nutzt die Werte, die beim Erstellen benutzt wurden
+    }
+    pop();
+  })
 
   //Zeichnet plattform und ball
-  for (let s of slides) {
-    push();
-    translate(s.position.x, s.position.y);
-    // rotate(s.angle);
-    rectMode(CENTER);
-    noStroke();
-    fill(s.highlight ? 'red' : 'white');
-    rect(0, -90, 270, 20); // Nutze die Werte, die du beim Erstellen benutzt hast
-    pop();
-  }
+  // for (let s of slides) {
+  // }
 
-// Ball zeichnen ohne class
-fill(ballColor);
-noStroke();
-ellipse(ball.body.position.x, ball.body.position.y, 80);
+  // Ball zeichnen
+  fill(ballColor);
+  noStroke();
+  ellipse(ball.body.position.x, ball.body.position.y, 80);
 
   // LAMPE ZEICHNEN
   stroke(0);
@@ -200,7 +206,7 @@ ellipse(ball.body.position.x, ball.body.position.y, 80);
 
   // Rechteckiges Seil
   push();
-  fill(255); // Seilfarbe, z. B. dunkelgrau oder braun
+  fill(255); // Seilfarbe weiß
   noStroke();
 
   // Berechne Vektor vom oberen Punkt zur Lampe
@@ -213,7 +219,7 @@ ellipse(ball.body.position.x, ball.body.position.y, 80);
   translate(rope.pointA.x, rope.pointA.y);
   rotate(angle);
   rectMode(CENTER);
-  rect(len / 2, 0, len, 20); // Länge = Seillänge, 20 = Dicke
+  rect(len / 2, 0, len, 20); // LÃ¤nge = Seillänge, 20 = Dicke
   pop();
 
   // Glühbirne
@@ -228,12 +234,25 @@ ellipse(ball.body.position.x, ball.body.position.y, 80);
   pop()
   //stellt zeichen einstellungen (kamera, Zoom) zurück
 
-  // Kontinuierlicher Schubs
-  Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0005, y: 0 });
+  // Kontinuierlicher Schubs 
+  // if x kleiner als so und so und x größer als so und so dann apply force 0
+  if (!(ball.body.position.x > 5540 && ball.body.position.x < 7000)) { // x < 1000 || x > 2000 && // wenn anders rum dann || benutzen statt &&
+    Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
+  }
+  // Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
 
-  // //wenn ball an der position angekommen, dann soll wieder von anfang an
-  // if (ball.body.position.y > 9200) {
-  //   Matter.Body.setPosition(ball.body, {x: 150, y: 150});
-  //   Matter.Body.setVelocity(ball.body, { x: 5, y: 0 });
-  // }
+  //wenn ball an der position angekommen, dann soll wieder von anfang an
+  if (ball.body.position.y > 5500) {
+    Matter.Body.setPosition(ball.body, {x: 150, y: 150});
+    Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
+  }
+
+
+  function drawVertices(vertices) {
+    beginShape();
+    for (const vertice of vertices) {
+      vertex(vertice.x, vertice.y);
+    }
+    endShape(CLOSE);
+  }
 }
