@@ -18,39 +18,10 @@ const baseY = 200;
 
 //Sound in Script einfügen
 function preload() {
-  font = loadFont('assets/roboto.ttf'); // TTF-Datei in assets-Ordner benötigt!!!!
+  // font = loadFont('assets/Roboto-Regular.otf');
   hitSound = loadSound('./Slap-SoundMaster13-49669815.mp3');
   console.log('TestSound')
   hitSound.playMode('sustain');
-}
-
-function createNumberBody(x, y, number, scale = 1) {
-  textFont(font);
-  textSize(300);
-  let pts = font.textToPoints(number.toString(), 0, 0, 300, {
-    sampleFactor: 0.1,
-    simplifyThreshold: 0
-  });
-
-  // Mittelpunkt berechnen (zentriert)
-  let minX = Math.min(...pts.map(p => p.x));
-  let maxX = Math.max(...pts.map(p => p.x));
-  let minY = Math.min(...pts.map(p => p.y));
-  let maxY = Math.max(...pts.map(p => p.y));
-  let offsetX = (minX + maxX) / 2;
-  let offsetY = (minY + maxY) / 2;
-
-  // Zentriere und skaliere Punkte
-  let verts = pts.map(p => ({
-    x: (p.x - offsetX) * scale + x,
-    y: (p.y - offsetY) * scale + y
-  }));
-
-  // Körper erzeugen
-  return Matter.Bodies.fromVertices(x, y, verts, {
-    isStatic: true,
-    label: "slide"
-  }, true);
 }
 
 //erzeugt zeichenfläche
@@ -65,19 +36,12 @@ function setup() {
   for (let i = 0; i < stairCount; i++) {
     const x = baseX + i * stepX;
     const y = baseY + i * stepY;
-  
-    let slide;
-  
-    if ((i + 1) % 5 === 0) {
-      // Für 5., 10., 15., 20. Stufe → Zahl als physikalischer Körper
-      slide = createNumberBody(x, y, i + 1, 0.3); // scale ggf. anpassen
-    } else {
-      // Normale rechteckige Stufe
-      slide = Matter.Bodies.rectangle(x, y, stairWidth, stairHeight, {
-        isStatic: true,
-        label: "slide"
-      });
-    }
+
+    const slide = Matter.Bodies.rectangle(x, y, stairWidth, stairHeight, {
+      isStatic: true,
+      // angle: 0.0,
+      label: "slide"
+    });
 
     slide.highlight = false; // Custom property
     slides.push(slide);
@@ -106,7 +70,7 @@ function setup() {
     let platform = Matter.Bodies.rectangle(x, y, platformWidth, platformHeight, {
       isStatic: true,
       angle: angle,
-      label: "platform"
+      label: "platform",
     });
     
     platform.neutral = true; // <--- Merkmal setzen
@@ -117,7 +81,7 @@ function setup() {
 
   // LAMPE AB STUFE 10 (Index 9)
   const lampAnchorX = slides[9].position.x;
-  const lampAnchorY = slides[9].position.y - 2800; // Hängt 2800px über Treppe
+  const lampAnchorY = slides[9].position.y - 1800; // Hängt 1800px über Treppe
 
   // Großer Lampenkörper (Kreis für Glühbirne als physikalisches Objekt)
   lampBody = Matter.Bodies.circle(lampAnchorX, lampAnchorY + 500, 100, {
@@ -214,30 +178,28 @@ function draw() {
   // zeichne visuelle zusammenhÃ¤ngende Treppe
   noStroke();
   let stairsToDraw = slides.slice(0, 1000); // Nur die erste Treppe
-  
   stairsToDraw.forEach((s, i) => {
     push();
-    translate(s.position.x, s.position.y);
-  
-    if ((i + 1) % 5 === 0) {
-      // Zahl zeichnen
-      fill('white');
-      textFont(font);
-      textSize(120);
-      textAlign(CENTER, CENTER);
-      text(i + 1, 0, 0);
+    fill(i > 7 && i < 11 ? 'black' : 'white'); // Weiß
+    if ((i + 1) % 5 == 0 && i < 24) {
+      // stroke('blue')
+      if (s.highlight) {
+        fill('red')
+      }
+      textSize(190);
+      textAlign(CENTER);
+      text(i+1, s.position.x, s.position.y+110)
     } else {
-      fill('white');
-      drawVertices(s.vertices);
+      drawVertices(s.vertices)
     }
-
-    if (s.highlight) {
+    translate(s.position.x, s.position.y - stairHeight / 2 + 100);
+    rectMode(CENTER);
+    if (s.highlight && (i  + 1) % 5 != 0) {
       noStroke();
       fill('red');
       // fill(s.highlight ? 'red' : 'black');
       rect(0, -90, 272, 20); // Nutzt die Werte, die beim Erstellen benutzt wurden
     }
-
     pop();
   })
 
