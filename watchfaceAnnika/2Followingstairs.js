@@ -49,7 +49,7 @@ function setup() {
   }
 
    // 10 geneigte Plattformen
-  const platformCount = 10;
+  const platformCount = 9;
   const platformWidth = 300;
   const platformHeight = 20;
   const platformBaseXLeft = 5650;
@@ -65,6 +65,51 @@ function setup() {
       : platformBaseXRight + i * horizontalShift;    
     
     let y = platformStartY + i * 180; // Abstand in y-Richtung (Höhe)
+    let angle = isLeft ? 0.7 : -0.7; //  Neigungswinkel für Flipper-Feeling
+
+    let platform = Matter.Bodies.rectangle(x, y, platformWidth, platformHeight, {
+      isStatic: true,
+      angle: angle,
+      label: "platform",
+    });
+    
+    platform.neutral = true; // <--- Merkmal setzen
+    platform.highlight = false;
+    slides.push(platform);
+    Matter.World.add(world, platform);
+  }
+
+  //  ZWEITE TREPPE 
+  const secondStairStartX = 6200;
+  const secondStairStartY = 5250; // Etwas unter den letzten Plattformen
+
+  for (let i = 0; i < stairCount + 1; i++) {
+    const x = secondStairStartX + i * stepX;
+    const y = secondStairStartY + i * stepY;
+
+    const slide = Matter.Bodies.rectangle(x, y, stairWidth, stairHeight, {
+      isStatic: true,
+      label: "slide"
+    });
+
+    slide.highlight = false;
+    slides.push(slide);
+    Matter.World.add(world, slide);
+  }
+
+  // Zweite Platform
+  const platformBase2XLeft = 11980;
+  const platformBase2XRight = 12430;
+  const platformStart2Y = 8480;
+
+  for (let i = 0; i < platformCount; i++) {
+    let isLeft = i % 2 === 0;
+    // x-Versatz anwenden
+    let x = isLeft 
+      ? platformBase2XLeft + i * horizontalShift 
+      : platformBase2XRight + i * horizontalShift;    
+    
+    let y = platformStart2Y + i * 180; // Abstand in y-Richtung (Höhe)
     let angle = isLeft ? 0.7 : -0.7; //  Neigungswinkel für Flipper-Feeling
 
     let platform = Matter.Bodies.rectangle(x, y, platformWidth, platformHeight, {
@@ -177,27 +222,27 @@ function draw() {
 
   // zeichne visuelle zusammenhÃ¤ngende Treppe
   noStroke();
-  let stairsToDraw = slides.slice(0, 1000); // Nur die erste Treppe
+  let stairsToDraw = slides; 
   stairsToDraw.forEach((s, i) => {
+    const slideIndex = slides.indexOf(s);
     push();
-    fill(i > 7 && i < 11 ? 'black' : 'white'); // Weiß
-    if ((i + 1) % 5 == 0 && i < 24) {
-      // stroke('blue')
+    fill(slideIndex > 7 && slideIndex < 11 ? 'black' : 'white');
+    
+    if ((slideIndex + 1) % 5 === 0 && slideIndex < 60) {  // <--- Erweitert für zweite Treppe
       if (s.highlight) {
         fill('red')
       }
       textSize(190);
       textAlign(CENTER);
-      text(i+1, s.position.x, s.position.y+110)
+      text(slideIndex+1, s.position.x, s.position.y + 110)
     } else {
       drawVertices(s.vertices)
     }
     translate(s.position.x, s.position.y - stairHeight / 2 + 100);
     rectMode(CENTER);
-    if (s.highlight && (i  + 1) % 5 != 0) {
+    if (s.highlight && (slideIndex + 1) % 5 != 0) {
       noStroke();
       fill('red');
-      // fill(s.highlight ? 'red' : 'black');
       rect(0, -90, 272, 20); // Nutzt die Werte, die beim Erstellen benutzt wurden
     }
     pop();
@@ -248,16 +293,16 @@ function draw() {
 
   // Kontinuierlicher Schubs 
   // if x kleiner als so und so und x größer als so und so dann apply force 0
-  if (!(ball.body.position.x > 5540 && ball.body.position.x < 7000)) { // x < 1000 || x > 2000 && // wenn anders rum dann || benutzen statt &&
+  if (!(ball.body.position.y > 3130 && ball.body.position.y < 4950)) { // x < 1000 || x > 2000 && // wenn anders rum dann || benutzen statt &&
     Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
   }
   // Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
 
   //wenn ball an der position angekommen, dann soll wieder von anfang an
-  if (ball.body.position.y > 5500) {
-    Matter.Body.setPosition(ball.body, {x: 150, y: 150});
-    Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
-  }
+  // if (ball.body.position.y > 5500) {
+  //   Matter.Body.setPosition(ball.body, {x: 150, y: 150});
+  //   Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
+  // }
 
 
   function drawVertices(vertices) {
