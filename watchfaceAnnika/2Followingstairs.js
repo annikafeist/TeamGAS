@@ -24,6 +24,14 @@ function preload() {
   hitSound.playMode('sustain');
 }
 
+function getCurrentTime(sec) {
+  const now = new Date();
+  const pad = num => num.toString().padStart(2, '0');
+
+  // return pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds())
+  return pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(sec);
+} 
+
 //erzeugt zeichenfläche
 function setup() {
   const canvas = createCanvas(960, 960);
@@ -232,10 +240,10 @@ function draw() {
       if (s.highlight) {
         fill('red')
       }
-      textSize(190);
+      textSize(50);
       textAlign(CENTER);
-      text(slideIndex+1, s.position.x, s.position.y + 110)
-    } else {
+      text(getCurrentTime(slideIndex+1), s.position.x, s.position.y + 25)
+      } else {
       drawVertices(s.vertices)
     }
     translate(s.position.x, s.position.y - stairHeight / 2 + 100);
@@ -293,16 +301,18 @@ function draw() {
 
   // Kontinuierlicher Schubs 
   // if x kleiner als so und so und x größer als so und so dann apply force 0
-  if (!(ball.body.position.y > 3130 && ball.body.position.y < 4950)) { // x < 1000 || x > 2000 && // wenn anders rum dann || benutzen statt &&
+  if (!(ball.body.position.y > 3130 && ball.body.position.y < 4950) &&
+      !(ball.body.position.y > 8260 && ball.body.position.y < 10000)) {
+ // x < 1000 || x > 2000 && // wenn anders rum dann || benutzen statt &&
     Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
   }
   // Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
 
-  //wenn ball an der position angekommen, dann soll wieder von anfang an
-  // if (ball.body.position.y > 5500) {
-  //   Matter.Body.setPosition(ball.body, {x: 150, y: 150});
-  //   Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
-  // }
+  // wenn ball an der position angekommen, dann soll wieder von anfang an
+  if (ball.body.position.y > 10200) {
+    Matter.Body.setPosition(ball.body, {x: 100, y: 50});
+    Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
+  }
 
 
   function drawVertices(vertices) {
