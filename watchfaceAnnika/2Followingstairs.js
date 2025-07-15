@@ -14,19 +14,10 @@ const stepY = 150; // vertikaler Abstand
 const baseX = 200;
 const baseY = 200;
 
-//Sound in Script einfügen
-function preload() {
-  // font = loadFont('assets/Roboto-Regular.otf');
-  hitSound = loadSound('./Slap-SoundMaster13-49669815.mp3');
-  console.log('TestSound')
-  hitSound.playMode('sustain');
-}
-
 function getCurrentTime(sec) {
   const now = new Date();
   const pad = num => num.toString().padStart(2, '0');
 
-  // return pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds())
   return pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(sec);
 }
 
@@ -45,12 +36,12 @@ function setup() {
 
     const slide = Matter.Bodies.rectangle(x, y, stairWidth, stairHeight, {
       isStatic: true,
-      // angle: 0.0,
       label: "slide"
     });
 
-    slide.highlight = false; // Custom property
+    slide.highlight = false; 
     slides.push(slide);
+    slide.originalPosition = { x: x, y: y }; // Ursprungsposition speichern
     Matter.World.add(world, slide);
   }
 
@@ -71,7 +62,7 @@ function setup() {
       : platformBaseXRight + i * horizontalShift;
 
     let y = platformStartY + i * 180; // Abstand in y-Richtung (Höhe)
-    let angle = isLeft ? 0.7 : -0.7; //  Neigungswinkel für Flipper-Feeling
+    let angle = isLeft ? 0.7 : -0.7; //  Neigungswinkel für Flipper
 
     let platform = Matter.Bodies.rectangle(x, y, platformWidth, platformHeight, {
       isStatic: true,
@@ -79,15 +70,15 @@ function setup() {
       label: "platform",
     });
 
-    platform.neutral = true; // <--- Merkmal setzen
+    platform.neutral = true; 
     platform.highlight = false;
     slides.push(platform);
     Matter.World.add(world, platform);
   }
 
   //  ZWEITE TREPPE 
-  const secondStairStartX = 6180;
-  const secondStairStartY = 5250; // Etwas unter den letzten Plattformen
+  const secondStairStartX = 6200;
+  const secondStairStartY = 5200; // Etwas unter den letzten Plattformen
 
   for (let i = 0; i < stairCount + 1; i++) {
     const x = secondStairStartX + i * stepX;
@@ -124,7 +115,7 @@ function setup() {
       label: "platform",
     });
 
-    platform.neutral = true; // <--- Merkmal setzen
+    platform.neutral = true; 
     platform.highlight = false;
     slides.push(platform);
     Matter.World.add(world, platform);
@@ -143,13 +134,6 @@ function setup() {
       const bodyB = pair.bodyB;
       console.log('Collision:', bodyA.label, bodyB.label);
 
-      // //Sound bei Kollision
-      // const labels = [bodyA.label, bodyB.label];
-      // if (labels.includes("ball") && labels.includes("slide")) {
-      //   console.log('Playing sound!');
-      //   hitSound.play();
-      // }
-
       // Aufleuchten
       const slide = bodyA.label === "slide" ? bodyA : bodyB;
       slide.highlight = true;
@@ -167,13 +151,11 @@ function draw() {
   //hintergrund schwarz
   background('black');
 
-  //zoomt die kamera je nachdem wo die maus ist
   const zoom = 0.5 // Fester Zoomfaktor, z. B. 1.0 für 100%
   //Berechnet wie kamera ball folgt (in der mitte hält)
   const shiftX = -ball.body.position.x * zoom + width / 2;
   const shiftY = -ball.body.position.y * zoom + height / 2;
 
-  // console.log(shiftX, shiftY)
   //speichert mit push
   push()
   //verschiebt und zoomt die ansicht damit kamera ball folgt
@@ -181,28 +163,23 @@ function draw() {
   scale(zoom)
 
   blendMode(BLEND);
-  //Lichtstrahl
+  //türkise fläche
   fill('darkturquoise');
   noStroke();
   rectMode(CENTER);
   rect(4120, 4000, 2710, 8000);
-  rect(10360, 6000, 2710, 8000);
-  // rect(5876, 1000, 810, 5000);
-  // rect(7600, 1000, 810, 5000);
-  // rect(10291, 1000, 810, 5000);
-
+  rect(10380, 8000, 2710, 8000);
 
   // zeichne visuelle zusammenhÃ¤ngende Treppe
   noStroke();
   let stairsToDraw = slides;
   stairsToDraw.forEach((s, i) => {
-    const slideIndex = i // slides.indexOf(s);
+    const slideIndex = i 
     push();
     fill(slideIndex > 9 && slideIndex < 20 || slideIndex > 39 && slideIndex < 50
-      // || slideIndex > 12 && slideIndex < 16 || slideIndex > 22 && slideIndex < 27 || slideIndex > 32 && slideIndex < 37 || slideIndex > 42 && slideIndex < 47 || slideIndex > 52 && slideIndex < 57 
       ? 'black' : 'darkturquoise');
 
-    if ((slideIndex + 1) % 5 === 0 && slideIndex < 60) {  // <--- Erweitert für zweite Treppe
+    if (s.label === "slide" && (slideIndex + 1) % 5 === 0 && slideIndex < 60) {
       if (s.highlight) {
         fill('white')
       }
@@ -213,10 +190,10 @@ function draw() {
         rotate(PI / 4)
         translate(-s.position.x, -s.position.y)
       } else {
-        textSize(50);
+        textSize(75);
       }
       textAlign(CENTER);
-      text(getCurrentTime(slideIndex + 1), s.position.x, s.position.y + 25)
+      text(getCurrentTime(slideIndex + 1), s.position.x -20, s.position.y + 40)
       pop()
     } else {
       drawVertices(s.vertices)
@@ -247,10 +224,9 @@ function draw() {
     // x < 1000 || x > 2000 && // wenn anders rum dann || benutzen statt &&
     Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
   }
-  // Matter.Body.applyForce(ball.body, ball.body.position, { x: 0.0008, y: 0 });
 
   // wenn ball an der position angekommen, dann soll wieder von anfang an
-  if (ball.body.position.y > 10200) {
+  if (ball.body.position.y > 10400) {
     Matter.Body.setPosition(ball.body, { x: 100, y: 50 });
     Matter.Body.setVelocity(ball.body, { x: 5.5, y: 0 });
   }
@@ -263,5 +239,3 @@ function draw() {
     endShape(CLOSE);
   }
 }
-
-// lampe weg blend mode was macht sinnn statt lampe bei kollision invertiert bei uhrzeit statt ball was anderes  
