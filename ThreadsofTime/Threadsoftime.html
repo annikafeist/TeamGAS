@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+
+  <head>
+    <meta charset="UTF-8" />
+  <!-- p5js -->
+  <script src="/libraries/p5.js" type="text/javascript"></script>
+  <script src="/libraries/p5.sound.js" type="text/javascript"></script>
+
+  <!-- matter.js -->
+  <script type="text/javascript" src="/libraries/decomp.min.js"></script>
+  <script type="text/javascript" src="/libraries/pathseg.js"></script>
+  <script type="text/javascript" src="/libraries/matter.js"></script>
+  </head>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 960px;
+      height: 960px;
+      overflow: hidden;
+      background-color: #222;
+    }
+    
+  </style>
+
+  <body>
+
+     <canvas id="blendCanvas" width="960" height="960"
+        style="position:absolute; top:0; left:0; z-index:10; pointer-events:none;"></canvas>
+
+  <script>
+    async function setupDeviceMotion() {
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
+        try {
+          const response = await DeviceOrientationEvent.requestPermission();
+          if (response === "granted") {
+            window.addEventListener("deviceorientation", handleOrientation);
+          } else {
+            alert("请允许陀螺仪权限以启用重力感应！");
+          }
+        } catch (e) {
+          alert("权限请求失败：" + e);
+        }
+      } else {
+        // 桌面或无需权限的浏览器
+        window.addEventListener("deviceorientation", handleOrientation);
+      }
+    }
+
+    function handleOrientation(event) {
+      const gamma = event.gamma || 0; // 左右倾斜（X轴）
+      const beta = event.beta || 0;   // 前后倾斜（Y轴）
+
+      if (window.engine) {
+        const gx = gamma / 30; // 调整灵敏度
+        const gy = beta / 30;
+        engine.world.gravity.x = Math.max(-1, Math.min(1, gx));
+        engine.world.gravity.y = Math.max(-1, Math.min(1, gy));
+      }
+    }
+
+    window.addEventListener("click", setupDeviceMotion);
+  </script>
+
+  
+
+  <script src="Threadsoftime.js"></script>
+</body>
+
+</html>
